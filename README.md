@@ -14,8 +14,8 @@ El aplicativo est√° desarrollado usando el framework de php Laravel en su versi√
 
 1. Clonar repositorio:
 ```Git
-git clone git@github.com:Felipe-Saenz01/Procesos-investigativos.git
-cd Procesos-investigativos
+git clone git@github.com:Felipe-Saenz01/Mosyne-Power.git
+cd mosyne-power
 ```
 
 2. Instalar dependencias de composer:
