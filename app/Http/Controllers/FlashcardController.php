@@ -7,9 +7,12 @@ use App\Models\LeitnerBox;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Traits\UsesSimulatedDate;
 
 class FlashcardController extends Controller
 {
+    use UsesSimulatedDate;
+
     public function index()
     {
         $flashcards = Flashcard::with('leitnerBox')
@@ -35,10 +38,36 @@ class FlashcardController extends Controller
             'back_content' => 'required|string',
         ]);
 
-        // Obtener la primera caja de Leitner del usuario
-        $firstBox = LeitnerBox::where('user_id', Auth::id())
-            ->where('box_number', 1)
-            ->firstOrFail();
+        // Verificar si el usuario tiene cajas de Leitner
+        $user = Auth::user();
+        $firstBox = $user->leitnerBoxes()->where('box_number', 1)->first();
+
+        // Si no tiene cajas, inicializarlas
+        if (!$firstBox) {
+            $defaultBoxes = [
+                ['name' => 'Diario', 'box_number' => 1, 'review_interval' => 1],
+                ['name' => 'Cada 3 días', 'box_number' => 2, 'review_interval' => 3],
+                ['name' => 'Semanal', 'box_number' => 3, 'review_interval' => 7],
+                ['name' => 'Quincenal', 'box_number' => 4, 'review_interval' => 14],
+                ['name' => 'Mensual', 'box_number' => 5, 'review_interval' => 30],
+            ];
+
+            foreach ($defaultBoxes as $box) {
+                if ($box['box_number'] === 1) {
+                    $firstBox = $user->leitnerBoxes()->create([
+                        'name' => $box['name'],
+                        'box_number' => $box['box_number'],
+                        'review_interval' => $box['review_interval']
+                    ]);
+                } else {
+                    $user->leitnerBoxes()->create([
+                        'name' => $box['name'],
+                        'box_number' => $box['box_number'],
+                        'review_interval' => $box['review_interval']
+                    ]);
+                }
+            }
+        }
 
         $flashcard = new Flashcard([
             'front_content' => $validated['front_content'],
@@ -107,18 +136,13 @@ class FlashcardController extends Controller
 
     public function getDueFlashcards()
     {
-        $dueFlashcards = Flashcard::with('leitnerBox')
-            ->where('user_id', Auth::id())
-            ->where('next_review_at', '<=', now())
+        $flashcards = auth()->user()->flashcards()
+            ->with('leitnerBox')
+            ->whereDate('next_review_at', '<=', now())
             ->get();
 
-        // Aplicar penalizaciones por inconsistencia
-        $dueFlashcards->each(function ($flashcard) {
-            $flashcard->penalizeForInconsistency();
-        });
-
         return Inertia::render('Flashcards/Review', [
-            'flashcards' => $dueFlashcards
+            'flashcards' => $flashcards,
         ]);
     }
 } 

@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -44,5 +45,29 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Get the user's flashcards.
+     */
+    public function flashcards(): HasMany
+    {
+        return $this->hasMany(Flashcard::class);
+    }
+
+    /**
+     * Get the user's review history.
+     */
+    public function reviewHistory(): HasMany
+    {
+        return $this->hasMany(ReviewHistory::class);
+    }
+
+    /**
+     * Get the user's Leitner boxes.
+     */
+    public function leitnerBoxes(): HasMany
+    {
+        return $this->hasMany(LeitnerBox::class);
     }
 }

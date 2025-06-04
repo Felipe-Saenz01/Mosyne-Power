@@ -46,6 +46,23 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
+        // Initialize Leitner boxes for the new user
+        $defaultBoxes = [
+            ['name' => 'Diario', 'box_number' => 1, 'review_interval' => 1],
+            ['name' => 'Cada 3 días', 'box_number' => 2, 'review_interval' => 3],
+            ['name' => 'Semanal', 'box_number' => 3, 'review_interval' => 7],
+            ['name' => 'Quincenal', 'box_number' => 4, 'review_interval' => 14],
+            ['name' => 'Mensual', 'box_number' => 5, 'review_interval' => 30],
+        ];
+
+        foreach ($defaultBoxes as $box) {
+            $user->leitnerBoxes()->create([
+                'name' => $box['name'],
+                'box_number' => $box['box_number'],
+                'review_interval' => $box['review_interval']
+            ]);
+        }
+
         return to_route('dashboard');
     }
 }

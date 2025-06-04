@@ -81,9 +81,9 @@ export default function Show({ box }: Props) {
                         </div>
 
                         {dueFlashcards.length > 0 && (
-                            <Link href={route('flashcards.due')}>
+                            <Link href={route('leitner.index')}>
                                 <Button>
-                                    Revisar {dueFlashcards.length} tarjeta
+                                    Ver {dueFlashcards.length} tarjeta
                                     {dueFlashcards.length > 1 ? 's' : ''} pendiente
                                     {dueFlashcards.length > 1 ? 's' : ''}
                                 </Button>

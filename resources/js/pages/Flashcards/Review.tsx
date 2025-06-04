@@ -42,21 +42,30 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Review({ flashcards }: Props) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [reviewedCount, setReviewedCount] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const currentFlashcard = flashcards[currentIndex];
     const progress = (reviewedCount / flashcards.length) * 100;
 
     const handleRemembered = (remembered: boolean) => {
+        if (isSubmitting) return;
+        
+        setIsSubmitting(true);
         router.post(route('flashcards.review', currentFlashcard.id), {
             remembered,
         }, {
             preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
+                setIsSubmitting(false);
                 if (currentIndex < flashcards.length - 1) {
                     setCurrentIndex(prev => prev + 1);
                 }
                 setReviewedCount(prev => prev + 1);
             },
+            onError: () => {
+                setIsSubmitting(false);
+            }
         });
     };
 
@@ -77,10 +86,10 @@ export default function Review({ flashcards }: Props) {
                             <CardContent>
                                 <Button
                                     variant="outline"
-                                    onClick={() => window.history.back()}
+                                    onClick={() => router.visit(route('dashboard'))}
                                 >
                                     <ArrowLeft className="w-4 h-4 mr-2" />
-                                    Volver
+                                    Volver al inicio
                                 </Button>
                             </CardContent>
                         </Card>
@@ -107,7 +116,7 @@ export default function Review({ flashcards }: Props) {
                             <CardContent>
                                 <Button
                                     variant="outline"
-                                    onClick={() => window.history.back()}
+                                    onClick={() => router.visit(route('dashboard'))}
                                 >
                                     <ArrowLeft className="w-4 h-4 mr-2" />
                                     Volver al inicio
@@ -151,6 +160,7 @@ export default function Review({ flashcards }: Props) {
                                 backContent={currentFlashcard.back_content}
                                 onRemembered={handleRemembered}
                                 showAnswerButtons
+                                disabled={isSubmitting}
                             />
                         </CardContent>
                     </Card>
