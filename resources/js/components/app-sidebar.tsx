@@ -48,7 +48,6 @@ export function AppSidebar() {
                         <SidebarMenuButton size="lg" asChild>
                             <Link href={route('dashboard')} prefetch>
                                 <AppLogo />
-                                <span className="ml-2 text-lg font-semibold">Mosyne Power</span>
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -58,19 +57,16 @@ export function AppSidebar() {
             <SidebarContent>
                 <div className="mb-4">
                     <div className="px-4 py-2">
-                        <h2 className="text-xs font-semibold text-muted-foreground">Platform</h2>
+                        <h2 className="text-xs font-semibold text-muted-foreground">Modulos</h2>
                     </div>
                     <NavMain items={platformNavItems} />
                 </div>
             </SidebarContent>
 
             <SidebarFooter>
-                <div className="mb-4">
-                    <div className="px-4 py-2">
-                        <h2 className="text-xs font-semibold text-muted-foreground">Resources</h2>
-                    </div>
+                {/* <div className="mb-4">
                     <NavMain items={footerNavItems} />
-                </div>
+                </div> */}
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

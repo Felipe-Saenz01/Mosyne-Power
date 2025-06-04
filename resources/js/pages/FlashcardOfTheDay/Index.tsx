@@ -7,6 +7,7 @@ import { Brain, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
+import { Flashcard } from '@/components/Flashcard';
 
 interface FlashcardOfTheDayProps {
     stats: {
@@ -35,22 +36,14 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function FlashcardOfTheDay({ stats, flashcards, totalDue }: FlashcardOfTheDayProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isFlipped, setIsFlipped] = useState(false);
-    const [isAnswered, setIsAnswered] = useState(false);
-    const [isAdvancing, setIsAdvancing] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [completedFlashcards, setCompletedFlashcards] = useState<number[]>([]);
 
     const currentFlashcard = flashcards[currentIndex];
-    const progress = (stats.completed_today / (stats.completed_today + stats.total_due)) * 100;
+    const progress = (completedFlashcards.length / flashcards.length) * 100;
 
-    const handleFlip = () => {
-        if (!isAnswered && !isSubmitting) {
-            setIsFlipped(!isFlipped);
-        }
-    };
-
-    const handleResponse = (remembered: boolean) => {
-        if (!currentFlashcard || isAnswered || isSubmitting) return;
+    const handleRemembered = (remembered: boolean) => {
+        if (!currentFlashcard || isSubmitting || completedFlashcards.includes(currentFlashcard.id)) return;
         
         setIsSubmitting(true);
         router.post(route('flashcards.review', currentFlashcard.id), {
@@ -60,16 +53,19 @@ export default function FlashcardOfTheDay({ stats, flashcards, totalDue }: Flash
             preserveState: true,
             onSuccess: () => {
                 setIsSubmitting(false);
-                setIsAnswered(true);
-                setTimeout(() => {
-                    if (currentIndex < flashcards.length - 1) {
-                        setCurrentIndex(prev => prev + 1);
-                        setIsFlipped(false);
-                        setIsAnswered(false);
-                    } else {
-                        router.visit(route('dashboard'), { method: 'get' });
+                setCompletedFlashcards(prev => [...prev, currentFlashcard.id]);
+                
+                // Si es la última flashcard o todas han sido completadas
+                if (currentIndex === flashcards.length - 1 || completedFlashcards.length + 1 === flashcards.length) {
+                    router.visit(route('dashboard'));
+                } else {
+                    // Buscar la siguiente flashcard no completada
+                    let nextIndex = currentIndex + 1;
+                    while (nextIndex < flashcards.length && completedFlashcards.includes(flashcards[nextIndex].id)) {
+                        nextIndex++;
                     }
-                }, 1000);
+                    setCurrentIndex(nextIndex);
+                }
             },
             onError: () => {
                 setIsSubmitting(false);
@@ -77,35 +73,35 @@ export default function FlashcardOfTheDay({ stats, flashcards, totalDue }: Flash
         });
     };
 
-    const handleAdvanceDay = () => {
-        if (isAdvancing) return;
-        
-        setIsAdvancing(true);
-        router.visit(route('system.advance-day'), { 
-            method: 'post',
-            preserveScroll: true,
-            onError: () => setIsAdvancing(false)
-        });
-    };
+    // Si todas las flashcards han sido completadas, mostrar mensaje
+    if (completedFlashcards.length === flashcards.length || flashcards.length === 0) {
+        return (
+            <AppLayout breadcrumbs={breadcrumbs}>
+                <Head title="Flashcard del Día" />
+                <div className="py-12">
+                    <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>¡No hay más tarjetas para revisar!</CardTitle>
+                                <p className="text-sm text-muted-foreground">
+                                    Has completado todas las revisiones programadas para hoy.
+                                </p>
+                            </CardHeader>
+                        </Card>
+                    </div>
+                </div>
+            </AppLayout>
+        );
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Flashcard del Día" />
-            
+
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    {/* Welcome Section */}
-                    <div className="mb-8">
-                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                            Flashcard del Día
-                        </h1>
-                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            Revisa tus tarjetas diarias para mantener tu aprendizaje constante
-                        </p>
-                    </div>
-
-                    {/* Stats Overview */}
-                    <div className="grid grid-cols-1 gap-6 mb-8 sm:grid-cols-3">
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-sm font-medium">
@@ -113,7 +109,7 @@ export default function FlashcardOfTheDay({ stats, flashcards, totalDue }: Flash
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{stats.total_due}</div>
+                                <div className="text-2xl font-bold">{flashcards.length - completedFlashcards.length}</div>
                                 <p className="text-xs text-muted-foreground">
                                     Por revisar hoy
                                 </p>
@@ -123,13 +119,13 @@ export default function FlashcardOfTheDay({ stats, flashcards, totalDue }: Flash
                         <Card>
                             <CardHeader>
                                 <CardTitle className="text-sm font-medium">
-                                    Completadas Hoy
+                                    Completadas
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{stats.completed_today}</div>
+                                <div className="text-2xl font-bold">{completedFlashcards.length}</div>
                                 <p className="text-xs text-muted-foreground">
-                                    Revisiones realizadas
+                                    Revisadas hoy
                                 </p>
                             </CardContent>
                         </Card>
@@ -159,8 +155,8 @@ export default function FlashcardOfTheDay({ stats, flashcards, totalDue }: Flash
                         <CardContent>
                             <div className="space-y-2">
                                 <div className="flex justify-between text-sm text-muted-foreground">
-                                    <span>{stats.completed_today} completadas</span>
-                                    <span>{stats.total_due} pendientes</span>
+                                    <span>{completedFlashcards.length} completadas</span>
+                                    <span>{flashcards.length - completedFlashcards.length} pendientes</span>
                                 </div>
                                 <Progress 
                                     value={progress} 
@@ -171,69 +167,25 @@ export default function FlashcardOfTheDay({ stats, flashcards, totalDue }: Flash
                     </Card>
 
                     {/* Flashcard Section */}
-                    {flashcards.length > 0 ? (
-                        <Card className="mb-8">
-                            <CardHeader>
-                                <CardTitle>Tarjeta {currentIndex + 1} de {flashcards.length}</CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    Caja {currentFlashcard.leitner_box.name} (Nivel {currentFlashcard.leitner_box.box_number})
-                                </p>
-                            </CardHeader>
-                            <CardContent>
-                                <div 
-                                    className={`p-6 min-h-[200px] cursor-pointer transition-all duration-500 relative rounded-lg border ${
-                                        isFlipped ? 'bg-muted' : ''
-                                    } ${(isAnswered || isSubmitting) ? 'opacity-50' : ''}`}
-                                    onClick={handleFlip}
-                                >
-                                    <div className="flex items-center justify-center h-full">
-                                        <p className="text-lg text-center">
-                                            {isFlipped ? currentFlashcard.back_content : currentFlashcard.front_content}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-center gap-4 mt-6">
-                                    <Button
-                                        variant="outline"
-                                        size="lg"
-                                        onClick={() => handleResponse(false)}
-                                        disabled={!isFlipped || isAnswered || isSubmitting}
-                                    >
-                                        <XCircle className="mr-2 h-4 w-4" />
-                                        No lo recordé
-                                    </Button>
-                                    <Button
-                                        size="lg"
-                                        onClick={() => handleResponse(true)}
-                                        disabled={!isFlipped || isAnswered || isSubmitting}
-                                    >
-                                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                                        Lo recordé
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <Card>
-                            <CardContent className="text-center py-12 space-y-4">
-                                <Brain className="mx-auto h-12 w-12 text-muted-foreground" />
-                                <h2 className="text-2xl font-semibold">¡No hay más tarjetas para revisar hoy!</h2>
-                                <p className="text-muted-foreground">
-                                    Has completado todas tus revisiones programadas. ¡Buen trabajo!
-                                </p>
-                                <Button
-                                    size="lg"
-                                    onClick={handleAdvanceDay}
-                                    disabled={isAdvancing}
-                                    className="mt-4"
-                                >
-                                    <ArrowRight className="mr-2 h-4 w-4" />
-                                    {isAdvancing ? 'Avanzando...' : 'Avanzar al siguiente día'}
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    )}
+                    <Card className="mb-8">
+                        <CardHeader>
+                            <CardTitle>Tarjeta {currentIndex + 1} de {flashcards.length}</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                Caja {currentFlashcard.leitner_box.name} (Nivel {currentFlashcard.leitner_box.box_number})
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex justify-center">
+                                <Flashcard
+                                    frontContent={currentFlashcard.front_content}
+                                    backContent={currentFlashcard.back_content}
+                                    onRemembered={handleRemembered}
+                                    showAnswerButtons
+                                    disabled={isSubmitting}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </AppLayout>

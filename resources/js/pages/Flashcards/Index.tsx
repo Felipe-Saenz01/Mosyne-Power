@@ -85,12 +85,6 @@ export default function Index({ flashcards }: Props) {
                                                 {new Date(flashcard.next_review_at).toLocaleDateString()}
                                             </CardDescription>
                                         </CardHeader>
-                                        <CardContent>
-                                            <Flashcard
-                                                frontContent={flashcard.front_content}
-                                                backContent={flashcard.back_content}
-                                            />
-                                        </CardContent>
                                     </Card>
                                 </Link>
                             ))}

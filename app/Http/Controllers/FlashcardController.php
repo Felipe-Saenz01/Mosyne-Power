@@ -136,10 +136,14 @@ class FlashcardController extends Controller
 
     public function getDueFlashcards()
     {
-        $flashcards = auth()->user()->flashcards()
-            ->with('leitnerBox')
+        $flashcards = Flashcard::with('leitnerBox')
+            ->where('user_id', Auth::id())
             ->whereDate('next_review_at', '<=', now())
             ->get();
+        // $flashcards = auth()->user()->flashcards()
+        //     ->with('leitnerBox')
+        //     ->whereDate('next_review_at', '<=', now())
+        //     ->get();
 
         return Inertia::render('Flashcards/Review', [
             'flashcards' => $flashcards,
