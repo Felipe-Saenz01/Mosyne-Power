@@ -15,12 +15,14 @@ class ReviewHistory extends Model
         'remembered',
         'previous_box',
         'new_box',
-        'reviewed_at'
+        'reviewed_at',
+        'days_overdue'
     ];
 
     protected $casts = [
         'remembered' => 'boolean',
-        'reviewed_at' => 'datetime'
+        'reviewed_at' => 'datetime',
+        'days_overdue' => 'integer'
     ];
 
     public function user(): BelongsTo

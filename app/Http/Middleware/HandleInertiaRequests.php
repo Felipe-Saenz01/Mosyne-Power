@@ -38,13 +38,41 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
+        $user = $request->user();
+        $reviewStats = [];
+
+        if ($user) {
+            $today = now()->startOfDay();
+            
+            $reviewStats = [
+                'cardsToReview' => $user->flashcards()
+                    ->where('next_review_at', '<=', now())
+                    ->count(),
+                'completedToday' => $user->reviewHistory()
+                    ->whereDate('reviewed_at', today())
+                    ->count(),
+                'totalCards' => $user->flashcards()->count(),
+                'successRate' => $user->reviewHistory()
+                    ->whereDate('reviewed_at', today())
+                    ->where('remembered', true)
+                    ->count() / max(1, $user->reviewHistory()->whereDate('reviewed_at', today())->count())
+            ];
+        }
 
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ] : null,
+            ],
+            'reviewStats' => $reviewStats,
+            'flash' => [
+                'message' => fn () => $request->session()->get('message')
             ],
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),

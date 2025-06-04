@@ -8,6 +8,7 @@ interface FlashcardProps {
     backContent: string;
     onRemembered?: (remembered: boolean) => void;
     showAnswerButtons?: boolean;
+    disabled?: boolean;
 }
 
 export function Flashcard({
@@ -15,15 +16,18 @@ export function Flashcard({
     backContent,
     onRemembered,
     showAnswerButtons = false,
+    disabled = false,
 }: FlashcardProps) {
     const [isFlipped, setIsFlipped] = useState(false);
 
     const handleFlip = () => {
-        setIsFlipped(!isFlipped);
+        if (!disabled) {
+            setIsFlipped(!isFlipped);
+        }
     };
 
     const handleRemembered = (remembered: boolean) => {
-        if (onRemembered) {
+        if (onRemembered && !disabled) {
             onRemembered(remembered);
             setIsFlipped(false);
         }
@@ -36,11 +40,12 @@ export function Flashcard({
                 tabIndex={0}
                 className={cn(
                     'w-full h-full absolute transition-all duration-500 [transform-style:preserve-3d] cursor-pointer',
-                    isFlipped ? '[transform:rotateY(180deg)]' : ''
+                    isFlipped ? '[transform:rotateY(180deg)]' : '',
+                    disabled ? 'opacity-50 cursor-not-allowed' : ''
                 )}
                 onClick={handleFlip}
                 onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
                         handleFlip();
                     }
                 }}
@@ -65,6 +70,7 @@ export function Flashcard({
                                         e.stopPropagation();
                                         handleRemembered(false);
                                     }}
+                                    disabled={disabled}
                                 >
                                     No recordé
                                 </Button>
@@ -74,6 +80,7 @@ export function Flashcard({
                                         e.stopPropagation();
                                         handleRemembered(true);
                                     }}
+                                    disabled={disabled}
                                 >
                                     Sí recordé
                                 </Button>
